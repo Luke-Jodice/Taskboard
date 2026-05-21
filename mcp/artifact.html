@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>TaskBoard Status</title>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f7f8fa;
+    --panel: #ffffff;
+    --border: #e5e7eb;
+    --text: #111827;
+    --muted: #6b7280;
+    --subtle: #f3f4f6;
+    --accent: #2563eb;
+
+    --col-todo: #6b7280;
+    --col-progress: #2563eb;
+    --col-review: #7c3aed;
+    --col-done: #059669;
+
+    --pri-urgent-bg: #fee2e2;
+    --pri-urgent-fg: #b91c1c;
+    --pri-high-bg: #ffedd5;
+    --pri-high-fg: #c2410c;
+    --pri-medium-bg: #dbeafe;
+    --pri-medium-fg: #1d4ed8;
+    --pri-low-bg: #f3f4f6;
+    --pri-low-fg: #4b5563;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  .wrap {
+    padding: 16px 20px 28px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  header.top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  header.top h1 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .total-pill {
+    background: var(--subtle);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .meta {
+    margin-left: auto;
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .controls input[type="search"] {
+    flex: 1;
+    min-width: 220px;
+    max-width: 360px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 12px;
+    border-radius: 8px;
+    font: inherit;
+    outline: none;
+  }
+  .controls input[type="search"]:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  }
+  .seg {
+    display: inline-flex;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 2px;
+    gap: 2px;
+  }
+  .seg button {
+    background: transparent;
+    border: 0;
+    padding: 5px 10px;
+    border-radius: 6px;
+    color: var(--muted);
+    cursor: pointer;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .seg button.on {
+    background: var(--text);
+    color: #fff;
+  }
+  .board {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+  }
+  @media (max-width: 1100px) {
+    .board { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 620px) {
+    .board { grid-template-columns: 1fr; }
+  }
+  .col {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .col-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel);
+  }
+  .col-head .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--col-todo);
+  }
+  .col-head[data-status="todo"] .dot { background: var(--col-todo); }
+  .col-head[data-status="in-progress"] .dot { background: var(--col-progress); }
+  .col-head[data-status="in-review"] .dot { background: var(--col-review); }
+  .col-head[data-status="done"] .dot { background: var(--col-done); }
+  .col-head .name {
+    font-weight: 600;
+    font-size: 13px;
+  }
+  .col-head .count {
+    margin-left: auto;
+    color: var(--muted);
+    font-size: 12px;
+    background: var(--subtle);
+    padding: 2px 8px;
+    border-radius: 999px;
+  }
+  .col-body {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    transition: border-color 120ms ease, transform 120ms ease;
+  }
+  .card:hover {
+    border-color: #c7cbd1;
+  }
+  .card .title {
+    font-weight: 600;
+    font-size: 13.5px;
+    line-height: 1.35;
+    margin: 0 0 4px;
+    word-wrap: break-word;
+  }
+  .card .desc {
+    color: var(--muted);
+    font-size: 12.5px;
+    line-height: 1.4;
+    margin: 0 0 8px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .card .row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .badge {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 2px 7px;
+    border-radius: 999px;
+    line-height: 1.4;
+  }
+  .badge.priority-urgent { background: var(--pri-urgent-bg); color: var(--pri-urgent-fg); }
+  .badge.priority-high   { background: var(--pri-high-bg);   color: var(--pri-high-fg); }
+  .badge.priority-medium { background: var(--pri-medium-bg); color: var(--pri-medium-fg); }
+  .badge.priority-low    { background: var(--pri-low-bg);    color: var(--pri-low-fg); }
+  .files {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--muted);
+    font-size: 11.5px;
+  }
+  .age {
+    margin-left: auto;
+    color: var(--muted);
+    font-size: 11.5px;
+  }
+  .empty {
+    color: var(--muted);
+    font-size: 12.5px;
+    padding: 8px 4px;
+    text-align: center;
+    font-style: italic;
+  }
+  .state {
+    padding: 24px;
+    text-align: center;
+    color: var(--muted);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+  .state.err {
+    color: #b91c1c;
+    background: #fef2f2;
+    border-color: #fecaca;
+    text-align: left;
+  }
+  .state.err code {
+    background: #fee2e2;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+  }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <h1>TaskBoard</h1>
+      <span id="total" class="total-pill">— issues</span>
+      <span id="meta" class="meta"></span>
+    </header>
+
+    <div class="controls">
+      <input id="q" type="search" placeholder="Search title or description…" autocomplete="off" />
+      <div class="seg" id="priority-filter" role="tablist" aria-label="Priority filter">
+        <button data-pri="all" class="on">All</button>
+        <button data-pri="urgent">Urgent</button>
+        <button data-pri="high">High</button>
+        <button data-pri="medium">Medium</button>
+        <button data-pri="low">Low</button>
+      </div>
+    </div>
+
+    <div id="loading" class="state">Loading…</div>
+    <div id="error" class="state err hidden"></div>
+    <div id="board" class="board hidden">
+      <div class="col">
+        <div class="col-head" data-status="todo"><span class="dot"></span><span class="name">To Do</span><span class="count" data-count="todo">0</span></div>
+        <div class="col-body" data-col="todo"></div>
+      </div>
+      <div class="col">
+        <div class="col-head" data-status="in-progress"><span class="dot"></span><span class="name">In Progress</span><span class="count" data-count="in-progress">0</span></div>
+        <div class="col-body" data-col="in-progress"></div>
+      </div>
+      <div class="col">
+        <div class="col-head" data-status="in-review"><span class="dot"></span><span class="name">In Review</span><span class="count" data-count="in-review">0</span></div>
+        <div class="col-body" data-col="in-review"></div>
+      </div>
+      <div class="col">
+        <div class="col-head" data-status="done"><span class="dot"></span><span class="name">Done</span><span class="count" data-count="done">0</span></div>
+        <div class="col-body" data-col="done"></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // Fully-qualified MCP tool name. If Cowork registers the server under a
+  // different prefix, update TOOL_NAME below.
+  const TOOL_NAME = "mcp__taskboard__list_issues";
+  const STATUSES = ["todo", "in-progress", "in-review", "done"];
+  const LS_PRI = "taskboard.filter.priority";
+  const LS_Q = "taskboard.filter.q";
+
+  const $loading = document.getElementById("loading");
+  const $error = document.getElementById("error");
+  const $board = document.getElementById("board");
+  const $total = document.getElementById("total");
+  const $meta = document.getElementById("meta");
+  const $q = document.getElementById("q");
+  const $priBar = document.getElementById("priority-filter");
+
+  let issues = [];
+  let priorityFilter = localStorage.getItem(LS_PRI) || "all";
+  $q.value = localStorage.getItem(LS_Q) || "";
+  applyPriorityToggle(priorityFilter);
+
+  function applyPriorityToggle(pri) {
+    [...$priBar.querySelectorAll("button")].forEach(b => {
+      b.classList.toggle("on", b.dataset.pri === pri);
+    });
+  }
+
+  $priBar.addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-pri]");
+    if (!btn) return;
+    priorityFilter = btn.dataset.pri;
+    localStorage.setItem(LS_PRI, priorityFilter);
+    applyPriorityToggle(priorityFilter);
+    render();
+  });
+
+  $q.addEventListener("input", () => {
+    localStorage.setItem(LS_Q, $q.value);
+    render();
+  });
+
+  function fmtAge(iso) {
+    if (!iso) return "";
+    const t = new Date(iso).getTime();
+    if (Number.isNaN(t)) return "";
+    const s = Math.floor((Date.now() - t) / 1000);
+    if (s < 60) return s + "s";
+    const m = Math.floor(s / 60);
+    if (m < 60) return m + "m";
+    const h = Math.floor(m / 60);
+    if (h < 24) return h + "h";
+    const d = Math.floor(h / 24);
+    if (d < 14) return d + "d";
+    const w = Math.floor(d / 7);
+    if (w < 9) return w + "w";
+    const mo = Math.floor(d / 30);
+    return mo + "mo";
+  }
+
+  function escapeHtml(s) {
+    return String(s ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function matchesFilter(issue) {
+    if (priorityFilter !== "all" && issue.priority !== priorityFilter) return false;
+    const q = $q.value.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      (issue.title || "").toLowerCase().includes(q) ||
+      (issue.description || "").toLowerCase().includes(q)
+    );
+  }
+
+  function cardHtml(issue) {
+    const refs = Array.isArray(issue.file_refs) ? issue.file_refs.length : 0;
+    return `
+      <div class="card">
+        <p class="title">${escapeHtml(issue.title)}</p>
+        ${issue.description ? `<p class="desc">${escapeHtml(issue.description)}</p>` : ""}
+        <div class="row">
+          <span class="badge priority-${escapeHtml(issue.priority)}">${escapeHtml(issue.priority)}</span>
+          ${refs ? `<span class="files">📎 ${refs} file${refs === 1 ? "" : "s"}</span>` : ""}
+          <span class="age" title="Updated ${escapeHtml(issue.updated_at || "")}">${fmtAge(issue.updated_at || issue.created_at)}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  function render() {
+    const filtered = issues.filter(matchesFilter);
+    $total.textContent = `${filtered.length} of ${issues.length} issue${issues.length === 1 ? "" : "s"}`;
+
+    for (const s of STATUSES) {
+      const items = filtered
+        .filter(i => i.status === s)
+        .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+      const $body = document.querySelector(`[data-col="${s}"]`);
+      const $count = document.querySelector(`[data-count="${s}"]`);
+      $count.textContent = items.length;
+      if (items.length === 0) {
+        $body.innerHTML = `<div class="empty">No issues</div>`;
+      } else {
+        $body.innerHTML = items.map(cardHtml).join("");
+      }
+    }
+  }
+
+  async function load() {
+    $error.classList.add("hidden");
+    if (!issues.length) $loading.classList.remove("hidden");
+    try {
+      const result = await window.cowork.callMcpTool(TOOL_NAME, {});
+      // MCP tool returns { content: [{ type: "text", text: "<json>" }] }.
+      // The Cowork wrapper may unwrap differently; handle both shapes.
+      let payload = result;
+      if (result && result.content && Array.isArray(result.content)) {
+        const txt = result.content.find(c => c.type === "text");
+        if (txt && typeof txt.text === "string") {
+          payload = JSON.parse(txt.text);
+        }
+      } else if (typeof result === "string") {
+        payload = JSON.parse(result);
+      }
+      if (!Array.isArray(payload)) {
+        throw new Error("Unexpected response shape from " + TOOL_NAME);
+      }
+      issues = payload;
+      $loading.classList.add("hidden");
+      $board.classList.remove("hidden");
+      const now = new Date();
+      $meta.textContent = `updated ${now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+      render();
+    } catch (err) {
+      $loading.classList.add("hidden");
+      $board.classList.add("hidden");
+      $error.classList.remove("hidden");
+      $error.innerHTML = `
+        <strong>Couldn't load issues.</strong><br />
+        ${escapeHtml(err && err.message ? err.message : String(err))}
+        <br /><br />
+        Check that the TaskBoard server is running on <code>localhost:3001</code>
+        and that the MCP tool <code>${escapeHtml(TOOL_NAME)}</code> is registered.
+      `;
+    }
+  }
+
+  load();
+</script>
+</body>
+</html>
