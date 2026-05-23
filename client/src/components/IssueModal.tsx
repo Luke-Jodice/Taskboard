@@ -236,19 +236,62 @@ function FileRefPicker({ value, onChange }: { value: string[]; onChange: (refs: 
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const STATUS_OPTIONS: { value: Status; label: string; dot: string; activeClass: string }[] = [
-  { value: 'todo',        label: 'To Do',       dot: 'bg-gray-400',   activeClass: 'border-gray-500  bg-gray-700/80  text-white' },
-  { value: 'in-progress', label: 'In Progress', dot: 'bg-blue-400',   activeClass: 'border-blue-600  bg-blue-950/80  text-blue-200' },
-  { value: 'in-review',   label: 'In Review',   dot: 'bg-amber-400',  activeClass: 'border-amber-600 bg-amber-950/80 text-amber-200' },
-  { value: 'done',        label: 'Done',        dot: 'bg-green-400',  activeClass: 'border-green-600 bg-green-950/80 text-green-200' },
+interface SegOption<T extends string> {
+  value: T;
+  label: string;
+  dot: string;
+  activeBg: string;
+  activeText: string;
+}
+
+const STATUS_OPTIONS: SegOption<Status>[] = [
+  { value: 'todo',        label: 'To Do',       dot: 'bg-gray-400',   activeBg: 'bg-gray-700',    activeText: 'text-white' },
+  { value: 'in-progress', label: 'In Progress', dot: 'bg-blue-400',   activeBg: 'bg-blue-950',    activeText: 'text-blue-200' },
+  { value: 'in-review',   label: 'In Review',   dot: 'bg-amber-400',  activeBg: 'bg-amber-950',   activeText: 'text-amber-200' },
+  { value: 'done',        label: 'Done',        dot: 'bg-green-400',  activeBg: 'bg-green-950',   activeText: 'text-green-200' },
 ];
 
-const PRIORITY_OPTIONS: { value: Priority; label: string; dot: string; activeClass: string }[] = [
-  { value: 'low',    label: 'Low',    dot: 'bg-gray-400',   activeClass: 'border-gray-500  bg-gray-700/80  text-white' },
-  { value: 'medium', label: 'Medium', dot: 'bg-blue-400',   activeClass: 'border-blue-600  bg-blue-950/80  text-blue-200' },
-  { value: 'high',   label: 'High',   dot: 'bg-orange-400', activeClass: 'border-orange-600 bg-orange-950/80 text-orange-200' },
-  { value: 'urgent', label: 'Urgent', dot: 'bg-red-400',    activeClass: 'border-red-600   bg-red-950/80   text-red-200' },
+const PRIORITY_OPTIONS: SegOption<Priority>[] = [
+  { value: 'low',    label: 'Low',    dot: 'bg-gray-400',   activeBg: 'bg-gray-700',    activeText: 'text-white' },
+  { value: 'medium', label: 'Medium', dot: 'bg-blue-400',   activeBg: 'bg-blue-950',    activeText: 'text-blue-200' },
+  { value: 'high',   label: 'High',   dot: 'bg-orange-400', activeBg: 'bg-orange-950',  activeText: 'text-orange-200' },
+  { value: 'urgent', label: 'Urgent', dot: 'bg-red-400',    activeBg: 'bg-red-950',     activeText: 'text-red-200' },
 ];
+
+function SegmentedControl<T extends string>({ id, options, value, onChange }: {
+  id: string;
+  options: SegOption<T>[];
+  value: T;
+  onChange: (v: T) => void;
+}) {
+  return (
+    <div className="flex bg-gray-800/50 border border-gray-700/80 rounded-xl p-1 gap-0.5">
+      {options.map((opt) => {
+        const active = value === opt.value;
+        return (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => onChange(opt.value)}
+            className="relative flex-1 flex items-center justify-center gap-1.5 py-2 px-1 rounded-lg text-xs font-medium"
+          >
+            {active && (
+              <motion.div
+                layoutId={`seg-${id}`}
+                className={`absolute inset-0 rounded-lg ${opt.activeBg}`}
+                transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+              />
+            )}
+            <span className={`relative z-10 w-1.5 h-1.5 rounded-full shrink-0 ${opt.dot}`} />
+            <span className={`relative z-10 transition-colors ${active ? opt.activeText : 'text-gray-500'}`}>
+              {opt.label}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 type Tab = 'details' | 'context';
 const TABS: { id: Tab; label: string }[] = [
@@ -411,44 +454,12 @@ export default function IssueModal({ issue, defaultStatus = 'todo', existingTags
 
                   <div>
                     <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Status</p>
-                    <div className="grid grid-cols-4 gap-2">
-                      {STATUS_OPTIONS.map((opt) => (
-                        <button
-                          key={opt.value}
-                          type="button"
-                          onClick={() => setStatus(opt.value)}
-                          className={`flex items-center gap-1.5 px-2.5 py-2 rounded-xl border text-xs font-medium transition-all ${
-                            status === opt.value
-                              ? opt.activeClass
-                              : 'border-gray-700/80 text-gray-500 hover:border-gray-600 hover:text-gray-300'
-                          }`}
-                        >
-                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${opt.dot}`} />
-                          {opt.label}
-                        </button>
-                      ))}
-                    </div>
+                    <SegmentedControl id="status" options={STATUS_OPTIONS} value={status} onChange={setStatus} />
                   </div>
 
                   <div>
                     <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Priority</p>
-                    <div className="grid grid-cols-4 gap-2">
-                      {PRIORITY_OPTIONS.map((opt) => (
-                        <button
-                          key={opt.value}
-                          type="button"
-                          onClick={() => setPriority(opt.value)}
-                          className={`flex items-center gap-1.5 px-2.5 py-2 rounded-xl border text-xs font-medium transition-all ${
-                            priority === opt.value
-                              ? opt.activeClass
-                              : 'border-gray-700/80 text-gray-500 hover:border-gray-600 hover:text-gray-300'
-                          }`}
-                        >
-                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${opt.dot}`} />
-                          {opt.label}
-                        </button>
-                      ))}
-                    </div>
+                    <SegmentedControl id="priority" options={PRIORITY_OPTIONS} value={priority} onChange={setPriority} />
                   </div>
                 </motion.div>
               ) : (

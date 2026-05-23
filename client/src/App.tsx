@@ -3,6 +3,7 @@ import Header from './components/Header';
 import Board from './components/Board';
 import FilterBar from './components/FilterBar';
 import IssueModal from './components/IssueModal';
+import CheckoutModal from './components/CheckoutModal';
 import type { Issue, Priority, Status } from './types';
 import { getIssues } from './api';
 
@@ -18,6 +19,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showCheckout, setShowCheckout] = useState(false);
   const [createDefaultStatus] = useState<Status>('todo');
   const [filterProjects, setFilterProjects] = useState<string[]>([]);
   const [filterPriorities, setFilterPriorities] = useState<Priority[]>([]);
@@ -96,7 +98,7 @@ export default function App() {
 
   return (
     <div className="flex flex-col h-full bg-gray-950 text-white">
-      <Header onNewIssue={() => setShowCreateModal(true)} />
+      <Header onNewIssue={() => setShowCreateModal(true)} onUpgrade={() => setShowCheckout(true)} />
 
       <main className="flex-1 overflow-hidden flex flex-col">
         {loading ? (
@@ -138,6 +140,8 @@ export default function App() {
           </>
         )}
       </main>
+
+      {showCheckout && <CheckoutModal onClose={() => setShowCheckout(false)} />}
 
       {showCreateModal && (
         <IssueModal
