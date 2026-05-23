@@ -1,26 +1,24 @@
 import { Router, Request, Response } from 'express';
+import { requireAuth, getAuth } from '@clerk/express';
 import { v4 as uuidv4 } from 'uuid';
 import { db } from '../db';
 import { Status } from '../types';
 
 const router = Router();
 
-router.get('/', (_req: Request, res: Response) => {
-  const issues = db.all().sort((a, b) => {
+router.use(requireAuth());
+
+router.get('/', (req: Request, res: Response) => {
+  const { userId } = getAuth(req);
+  const issues = db.all(userId!).sort((a, b) => {
     if (a.status !== b.status) return a.status.localeCompare(b.status);
     return a.position - b.position;
   });
   res.json(issues);
 });
 
-//Filtered return
-router.get('/:tag', (req: Request, res: Response) => {
-  const { tag } = req.params;
-  //integrate to only return the tasks with the tag
-  res.json({ });
-});
-
 router.post('/', (req: Request, res: Response) => {
+  const { userId } = getAuth(req);
   const { title, description = '', status = 'todo', priority = 'medium', file_refs = [], tags = [] } = req.body;
 
   if (!title || typeof title !== 'string' || title.trim() === '') {
@@ -28,11 +26,12 @@ router.post('/', (req: Request, res: Response) => {
     return;
   }
 
-  const colIssues = db.all().filter(i => i.status === status);
+  const colIssues = db.all(userId!).filter(i => i.status === status);
   const position = colIssues.length;
 
   const issue = db.insert({
     id: uuidv4(),
+    user_id: userId!,
     title: title.trim(),
     description,
     status: status as Status,
@@ -48,8 +47,9 @@ router.post('/', (req: Request, res: Response) => {
 });
 
 router.patch('/:id', (req: Request, res: Response) => {
+  const { userId } = getAuth(req);
   const { id } = req.params;
-  const existing = db.get(id);
+  const existing = db.get(id, userId!);
   if (!existing) {
     res.status(404).json({ error: 'Issue not found' });
     return;
@@ -64,31 +64,33 @@ router.patch('/:id', (req: Request, res: Response) => {
   if (file_refs !== undefined) patch.file_refs = Array.isArray(file_refs) ? file_refs : [];
   if (tags !== undefined) patch.tags = Array.isArray(tags) ? tags : [];
 
-  const updated = db.update(id, patch as any);
+  const updated = db.update(id, userId!, patch as any);
   res.json(updated);
 });
 
 router.delete('/:id', (req: Request, res: Response) => {
+  const { userId } = getAuth(req);
   const { id } = req.params;
-  if (!db.get(id)) {
+  if (!db.get(id, userId!)) {
     res.status(404).json({ error: 'Issue not found' });
     return;
   }
-  db.delete(id);
+  db.delete(id, userId!);
   res.json({ success: true });
 });
 
 router.patch('/:id/move', (req: Request, res: Response) => {
+  const { userId } = getAuth(req);
   const { id } = req.params;
   const { status, position } = req.body;
 
-  const existing = db.get(id);
+  const existing = db.get(id, userId!);
   if (!existing) {
     res.status(404).json({ error: 'Issue not found' });
     return;
   }
 
-  const all = db.all();
+  const all = db.all(userId!);
   const now = new Date().toISOString();
 
   if (existing.status === status) {
@@ -97,7 +99,7 @@ router.patch('/:id/move', (req: Request, res: Response) => {
     col.splice(position, 0, { ...existing, status, position, updated_at: now });
     col.forEach((issue, idx) => { issue.position = idx; });
     const others = all.filter(i => i.status !== status);
-    db.saveAll([...others, ...col]);
+    db.saveForUser(userId!, [...others, ...col]);
   } else {
     const oldCol = all.filter(i => i.status === existing.status && i.id !== id)
       .sort((a, b) => a.position - b.position);
@@ -110,10 +112,10 @@ router.patch('/:id/move', (req: Request, res: Response) => {
     newCol.forEach((issue, idx) => { issue.position = idx; });
 
     const rest = all.filter(i => i.status !== existing.status && i.status !== status);
-    db.saveAll([...rest, ...oldCol, ...newCol]);
+    db.saveForUser(userId!, [...rest, ...oldCol, ...newCol]);
   }
 
-  res.json(db.get(id));
+  res.json(db.get(id, userId!));
 });
 
 export default router;

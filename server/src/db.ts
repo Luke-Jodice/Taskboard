@@ -21,12 +21,12 @@ function save(issues: Issue[]): void {
 }
 
 export const db = {
-  all(): Issue[] {
-    return load();
+  all(userId: string): Issue[] {
+    return load().filter(i => i.user_id === userId);
   },
 
-  get(id: string): Issue | undefined {
-    return load().find(i => i.id === id);
+  get(id: string, userId: string): Issue | undefined {
+    return load().find(i => i.id === id && i.user_id === userId);
   },
 
   insert(issue: Issue): Issue {
@@ -36,25 +36,27 @@ export const db = {
     return issue;
   },
 
-  update(id: string, patch: Partial<Issue>): Issue | undefined {
+  update(id: string, userId: string, patch: Partial<Issue>): Issue | undefined {
     const issues = load();
-    const idx = issues.findIndex(i => i.id === id);
+    const idx = issues.findIndex(i => i.id === id && i.user_id === userId);
     if (idx === -1) return undefined;
     issues[idx] = { ...issues[idx], ...patch };
     save(issues);
     return issues[idx];
   },
 
-  delete(id: string): boolean {
+  delete(id: string, userId: string): boolean {
     const issues = load();
-    const idx = issues.findIndex(i => i.id === id);
+    const idx = issues.findIndex(i => i.id === id && i.user_id === userId);
     if (idx === -1) return false;
     issues.splice(idx, 1);
     save(issues);
     return true;
   },
 
-  saveAll(issues: Issue[]): void {
-    save(issues);
+  // Replace all issues belonging to userId, preserving other users' data.
+  saveForUser(userId: string, userIssues: Issue[]): void {
+    const others = load().filter(i => i.user_id !== userId);
+    save([...others, ...userIssues]);
   },
 };

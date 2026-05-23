@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { useAuth } from '@clerk/react';
 import Header from './components/Header';
 import Board from './components/Board';
 import FilterBar from './components/FilterBar';
 import IssueModal from './components/IssueModal';
 import CheckoutModal from './components/CheckoutModal';
 import type { Issue, Priority, Status } from './types';
-import { getIssues } from './api';
+import { getIssues, setAuthToken } from './api';
 
 function getProject(ref: string): string | null {
   const parts = ref.split('/');
@@ -15,6 +16,7 @@ function getProject(ref: string): string | null {
 }
 
 export default function App() {
+  const { getToken, isSignedIn, isLoaded } = useAuth();
   const [issues, setIssues] = useState<Issue[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -76,8 +78,16 @@ export default function App() {
     );
 
   const fetchIssues = useCallback(async () => {
+    if (!isLoaded) return;
+    if (!isSignedIn) {
+      setIssues([]);
+      setLoading(false);
+      return;
+    }
     try {
       setError(null);
+      const token = await getToken();
+      setAuthToken(token);
       const data = await getIssues();
       setIssues(data);
     } catch (err) {
@@ -86,7 +96,7 @@ export default function App() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isLoaded, isSignedIn, getToken]);
 
   useEffect(() => {
     fetchIssues();
@@ -101,7 +111,11 @@ export default function App() {
       <Header onNewIssue={() => setShowCreateModal(true)} onUpgrade={() => setShowCheckout(true)} />
 
       <main className="flex-1 overflow-hidden flex flex-col">
-        {loading ? (
+        {isLoaded && !isSignedIn ? (
+          <div className="flex-1 flex items-center justify-center">
+            <p className="text-gray-400 text-sm">Sign in to view your tasks.</p>
+          </div>
+        ) : loading ? (
           <div className="flex-1 flex items-center justify-center">
             <div className="flex flex-col items-center gap-3">
               <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />

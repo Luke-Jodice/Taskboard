@@ -6,6 +6,14 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
+export function setAuthToken(token: string | null) {
+  if (token) {
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  } else {
+    delete api.defaults.headers.common['Authorization'];
+  }
+}
+
 export interface CreateIssueData {
   title: string;
   description?: string;

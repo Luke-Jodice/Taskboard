@@ -3,6 +3,7 @@ export type Priority = 'low' | 'medium' | 'high' | 'urgent';
 
 export interface Issue {
   id: string;
+  user_id: string;
   title: string;
   description: string;
   status: Status;
