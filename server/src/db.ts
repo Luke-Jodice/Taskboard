@@ -54,9 +54,12 @@ export const db = {
     return true;
   },
 
-  // Replace all issues belonging to userId, preserving other users' data.
   saveForUser(userId: string, userIssues: Issue[]): void {
     const others = load().filter(i => i.user_id !== userId);
     save([...others, ...userIssues]);
+  },
+
+  allIssues(): Issue[] {
+    return load();
   },
 };

@@ -1,14 +1,17 @@
 import React from 'react';
-import { Plus, Kanban, Sparkles } from 'lucide-react';
+import { Plus, Kanban, Sparkles, Shield } from 'lucide-react';
 import { SignInButton, SignUpButton, UserButton, useUser } from '@clerk/react';
+import { useAdminRole } from '../hooks/useAdminRole';
 
 interface HeaderProps {
   onNewIssue: () => void;
   onUpgrade: () => void;
+  onAdminDashboard: () => void;
 }
 
-export default function Header({ onNewIssue, onUpgrade }: HeaderProps) {
+export default function Header({ onNewIssue, onUpgrade, onAdminDashboard }: HeaderProps) {
   const { isSignedIn } = useUser();
+  const isAdmin = useAdminRole();
 
   return (
     <header className="flex items-center justify-between px-6 py-3 bg-gray-900 border-b border-gray-800 flex-shrink-0">
@@ -18,6 +21,15 @@ export default function Header({ onNewIssue, onUpgrade }: HeaderProps) {
       </div>
 
       <div className="flex items-center gap-2">
+        {isSignedIn && isAdmin && (
+          <button
+            onClick={onAdminDashboard}
+            className="flex items-center gap-1.5 text-sm font-medium text-violet-300 hover:text-violet-200 bg-violet-500/10 hover:bg-violet-500/20 px-3 py-2 rounded-lg transition-colors"
+          >
+            <Shield size={14} />
+            Admin
+          </button>
+        )}
         {isSignedIn ? (
           <UserButton appearance={{ elements: { avatarBox: 'w-8 h-8' } }} />
         ) : (

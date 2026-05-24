@@ -66,3 +66,33 @@ export async function searchFiles(q: string): Promise<FileResult[]> {
   const res = await api.get<FileResult[]>('/files/search', { params: { q } });
   return res.data;
 }
+
+export interface UserSummary {
+  id: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  role: 'admin' | null;
+  issueCount: number;
+  createdAt: string;
+}
+
+export interface DashboardData {
+  users: UserSummary[];
+  totalIssues: number;
+  totalUsers: number;
+  adminCount: number;
+}
+
+export async function getAdminDashboard(): Promise<DashboardData> {
+  const res = await api.get<DashboardData>('/admin/dashboard');
+  return res.data;
+}
+
+export async function updateUserRole(
+  userId: string,
+  role: 'admin' | null
+): Promise<{ id: string; email: string; role: 'admin' | null }> {
+  const res = await api.patch(`/admin/users/${userId}/role`, { role });
+  return res.data;
+}

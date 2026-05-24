@@ -5,6 +5,7 @@ import Board from './components/Board';
 import FilterBar from './components/FilterBar';
 import IssueModal from './components/IssueModal';
 import CheckoutModal from './components/CheckoutModal';
+import AdminDashboard from './components/AdminDashboard';
 import type { Issue, Priority, Status } from './types';
 import { getIssues, setAuthToken } from './api';
 
@@ -22,6 +23,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
+  const [showAdminDashboard, setShowAdminDashboard] = useState(false);
   const [createDefaultStatus] = useState<Status>('todo');
   const [filterProjects, setFilterProjects] = useState<string[]>([]);
   const [filterPriorities, setFilterPriorities] = useState<Priority[]>([]);
@@ -108,7 +110,11 @@ export default function App() {
 
   return (
     <div className="flex flex-col h-full bg-gray-950 text-white">
-      <Header onNewIssue={() => setShowCreateModal(true)} onUpgrade={() => setShowCheckout(true)} />
+      <Header
+        onNewIssue={() => setShowCreateModal(true)}
+        onUpgrade={() => setShowCheckout(true)}
+        onAdminDashboard={() => setShowAdminDashboard(true)}
+      />
 
       <main className="flex-1 overflow-hidden flex flex-col">
         {isLoaded && !isSignedIn ? (
@@ -154,6 +160,8 @@ export default function App() {
           </>
         )}
       </main>
+
+      {showAdminDashboard && <AdminDashboard onClose={() => setShowAdminDashboard(false)} />}
 
       {showCheckout && <CheckoutModal onClose={() => setShowCheckout(false)} />}
 

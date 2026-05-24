@@ -5,6 +5,7 @@ import { clerkMiddleware } from '@clerk/express';
 import issuesRouter from './routes/issues';
 import filesRouter from './routes/files';
 import emailRouter from './routes/email';
+import adminRouter from './routes/admin';
 
 const app = express();
 const PORT = 3001;
@@ -16,6 +17,7 @@ app.use(clerkMiddleware());
 app.use('/api/issues', issuesRouter);
 app.use('/api/files', filesRouter);
 app.use('/api/email', emailRouter);
+app.use('/api/admin', adminRouter);
 
 app.listen(PORT, () => {
   console.log(`TaskBoard server running on http://localhost:${PORT}`);
