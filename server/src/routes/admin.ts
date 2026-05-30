@@ -1,12 +1,16 @@
 import { Router, Request, Response } from 'express';
-import { requireAuth, getAuth, clerkClient } from '@clerk/express';
+import { getAuth, clerkClient } from '@clerk/express';
 import { requireAdmin } from '../middleware/requireAdmin';
 import { db } from '../db';
 import { UserSummary } from '../types';
 
 const router = Router();
 
-router.use(requireAuth());
+router.use((req, res, next) => {
+  const { userId } = getAuth(req);
+  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+  next();
+});
 router.use(requireAdmin);
 
 router.get('/dashboard', async (_req: Request, res: Response) => {

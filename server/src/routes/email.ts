@@ -1,10 +1,14 @@
 import { Router, Request, Response } from 'express';
-import { requireAuth, getAuth } from '@clerk/express';
+import { getAuth } from '@clerk/express';
 import { sendEmail } from '../services/email';
 
 const router = Router();
 
-router.use(requireAuth());
+router.use((req, res, next) => {
+  const { userId } = getAuth(req);
+  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+  next();
+});
 
 router.post('/test', async (req: Request, res: Response) => {
   const { userId } = getAuth(req);

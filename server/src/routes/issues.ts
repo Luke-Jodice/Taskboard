@@ -1,12 +1,16 @@
 import { Router, Request, Response } from 'express';
-import { requireAuth, getAuth } from '@clerk/express';
+import { getAuth } from '@clerk/express';
 import { v4 as uuidv4 } from 'uuid';
 import { db } from '../db';
 import { Status } from '../types';
 
 const router = Router();
 
-router.use(requireAuth());
+router.use((req, res, next) => {
+  const { userId } = getAuth(req);
+  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+  next();
+});
 
 router.get('/', (req: Request, res: Response) => {
   const { userId } = getAuth(req);
