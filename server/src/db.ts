@@ -1,65 +1,84 @@
-import fs from 'fs';
-import path from 'path';
+import { createClient } from '@supabase/supabase-js';
 import { Issue } from './types';
 
-const DATA_DIR = path.join(process.env.HOME || '', '.taskboard');
-const DB_FILE = path.join(DATA_DIR, 'issues.json');
-
-if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-
-function load(): Issue[] {
-  if (!fs.existsSync(DB_FILE)) return [];
-  try {
-    return JSON.parse(fs.readFileSync(DB_FILE, 'utf-8'));
-  } catch {
-    return [];
-  }
-}
-
-function save(issues: Issue[]): void {
-  fs.writeFileSync(DB_FILE, JSON.stringify(issues, null, 2));
-}
+const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 export const db = {
-  all(userId: string): Issue[] {
-    return load().filter(i => i.user_id === userId);
+  async all(userId: string): Promise<Issue[]> {
+    const { data, error } = await supabase
+      .from('issues')
+      .select('*')
+      .eq('user_id', userId)
+      .order('status')
+      .order('position');
+    if (error) throw error;
+    return (data ?? []) as Issue[];
   },
 
-  get(id: string, userId: string): Issue | undefined {
-    return load().find(i => i.id === id && i.user_id === userId);
+  async get(id: string, userId: string): Promise<Issue | undefined> {
+    const { data, error } = await supabase
+      .from('issues')
+      .select('*')
+      .eq('id', id)
+      .eq('user_id', userId)
+      .single();
+    if (error) return undefined;
+    return data as Issue;
   },
 
-  insert(issue: Issue): Issue {
-    const issues = load();
-    issues.push(issue);
-    save(issues);
-    return issue;
+  async insert(issue: Issue): Promise<Issue> {
+    const { data, error } = await supabase
+      .from('issues')
+      .insert(issue)
+      .select()
+      .single();
+    if (error) throw error;
+    return data as Issue;
   },
 
-  update(id: string, userId: string, patch: Partial<Issue>): Issue | undefined {
-    const issues = load();
-    const idx = issues.findIndex(i => i.id === id && i.user_id === userId);
-    if (idx === -1) return undefined;
-    issues[idx] = { ...issues[idx], ...patch };
-    save(issues);
-    return issues[idx];
+  async update(id: string, userId: string, patch: Partial<Issue>): Promise<Issue | undefined> {
+    const { data, error } = await supabase
+      .from('issues')
+      .update(patch)
+      .eq('id', id)
+      .eq('user_id', userId)
+      .select()
+      .single();
+    if (error) return undefined;
+    return data as Issue;
   },
 
-  delete(id: string, userId: string): boolean {
-    const issues = load();
-    const idx = issues.findIndex(i => i.id === id && i.user_id === userId);
-    if (idx === -1) return false;
-    issues.splice(idx, 1);
-    save(issues);
-    return true;
+  async delete(id: string, userId: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('issues')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', userId);
+    return !error;
   },
 
-  saveForUser(userId: string, userIssues: Issue[]): void {
-    const others = load().filter(i => i.user_id !== userId);
-    save([...others, ...userIssues]);
+  async saveForUser(userId: string, userIssues: Issue[]): Promise<void> {
+    const { error: delError } = await supabase
+      .from('issues')
+      .delete()
+      .eq('user_id', userId);
+    if (delError) throw delError;
+    if (userIssues.length > 0) {
+      const { error: insError } = await supabase
+        .from('issues')
+        .insert(userIssues);
+      if (insError) throw insError;
+    }
   },
 
-  allIssues(): Issue[] {
-    return load();
+  async allIssues(): Promise<Issue[]> {
+    const { data, error } = await supabase
+      .from('issues')
+      .select('*');
+    if (error) throw error;
+    return (data ?? []) as Issue[];
   },
 };

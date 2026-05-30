@@ -16,7 +16,7 @@ router.use(requireAdmin);
 router.get('/dashboard', async (_req: Request, res: Response) => {
   try {
     const { data: users } = await clerkClient.users.getUserList({ limit: 100 });
-    const allIssues = db.allIssues();
+    const allIssues = await db.allIssues();
 
     const userSummaries: UserSummary[] = users.map(user => {
       const primaryEmail = user.emailAddresses.find(
