@@ -1,4 +1,3 @@
-import React from 'react';
 import { motion } from 'framer-motion';
 import { FileText, Tag } from 'lucide-react';
 import { useDraggable } from '@dnd-kit/core';

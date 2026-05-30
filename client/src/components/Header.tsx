@@ -1,4 +1,3 @@
-import React from 'react';
 import { Plus, Kanban, Sparkles, Shield } from 'lucide-react';
 import { SignInButton, SignUpButton, UserButton, useUser } from '@clerk/react';
 import { useAdminRole } from '../hooks/useAdminRole';
