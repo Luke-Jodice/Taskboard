@@ -54,7 +54,7 @@ export default function CheckoutModal({ onClose }: CheckoutModalProps) {
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 z-50 flex items-center justify-center p-4"
+        className="fixed inset-0 z-[200] flex items-center justify-center p-4"
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       >
         <motion.div
@@ -63,35 +63,37 @@ export default function CheckoutModal({ onClose }: CheckoutModalProps) {
           initial={{ opacity: 0 }} animate={{ opacity: 1 }}
         />
 
-        <motion.div
-          className="relative z-10 w-full max-w-4xl bg-white rounded-2xl shadow-2xl overflow-hidden"
-          style={{ maxHeight: 'calc(100vh - 2rem)' }}
-          initial={{ opacity: 0, scale: 0.96, y: 16 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.96, y: 16 }}
-          transition={{ type: 'spring', duration: 0.28, bounce: 0.15 }}
-        >
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 z-20 w-7 h-7 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:text-gray-800 hover:bg-gray-200 transition-colors"
+        {/* No transform animation here — transforms create a persistent stacking context that traps Clerk's checkout overlay behind plan cards */}
+        <div className="relative z-10 w-full max-w-4xl">
+          {/* No overflow-hidden — that combined with a transformed ancestor clips Clerk's fixed-position checkout overlay */}
+          <div
+            className="bg-white rounded-2xl shadow-2xl"
+            style={{ maxHeight: 'calc(100vh - 2rem)' }}
           >
-            <X size={15} />
-          </button>
+            <div className="relative">
+              <button
+                onClick={onClose}
+                className="absolute top-4 right-4 z-20 w-7 h-7 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:text-gray-800 hover:bg-gray-200 transition-colors"
+              >
+                <X size={15} />
+              </button>
+            </div>
 
-          <div className="overflow-y-auto p-8" style={{ maxHeight: 'calc(100vh - 2rem)' }}>
-            <PricingTableErrorBoundary>
-              <PricingTable
-                checkoutProps={{
-                  appearance: {
-                    elements: {
-                      rootBox: { zIndex: 9999 },
+            <div className="overflow-y-auto p-8 rounded-2xl" style={{ maxHeight: 'calc(100vh - 2rem)' }}>
+              <PricingTableErrorBoundary>
+                <PricingTable
+                  checkoutProps={{
+                    appearance: {
+                      elements: {
+                        rootBox: { zIndex: 9999, position: 'fixed' },
+                      },
                     },
-                  },
-                }}
-              />
-            </PricingTableErrorBoundary>
+                  }}
+                />
+              </PricingTableErrorBoundary>
+            </div>
           </div>
-        </motion.div>
+        </div>
       </motion.div>
     </AnimatePresence>
   );
