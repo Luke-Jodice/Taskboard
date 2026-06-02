@@ -6,21 +6,17 @@ import FilterBar from './components/FilterBar';
 import IssueModal from './components/IssueModal';
 import CheckoutModal from './components/CheckoutModal';
 import AdminDashboard from './components/AdminDashboard';
+import DashboardPage from './components/DashboardPage';
 import type { Issue, Priority, Status } from './types';
 import { getIssues, setAuthToken } from './api';
-
-function getProject(ref: string): string | null {
-  const parts = ref.split('/');
-  const codeIdx = parts.indexOf('Code');
-  if (codeIdx === -1 || codeIdx + 1 >= parts.length) return null;
-  return parts[codeIdx + 1] || null;
-}
+import { getProject } from './utils';
 
 export default function App() {
   const { getToken, isSignedIn, isLoaded } = useAuth();
   const [issues, setIssues] = useState<Issue[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState<'board' | 'dashboard'>('board');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
   const [showAdminDashboard, setShowAdminDashboard] = useState(false);
@@ -28,6 +24,7 @@ export default function App() {
   const [filterProjects, setFilterProjects] = useState<string[]>([]);
   const [filterPriorities, setFilterPriorities] = useState<Priority[]>([]);
   const [filterTags, setFilterTags] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const allProjects = useMemo(() => {
     const seen = new Set<string>();
@@ -49,7 +46,9 @@ export default function App() {
   }, [issues]);
 
   const filteredIssues = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
     return issues.filter((issue) => {
+      if (q && !issue.title.toLowerCase().includes(q) && !issue.description.toLowerCase().includes(q)) return false;
       if (filterPriorities.length > 0 && !filterPriorities.includes(issue.priority)) return false;
       if (filterProjects.length > 0) {
         const issueProjects = issue.file_refs
@@ -62,7 +61,7 @@ export default function App() {
       }
       return true;
     });
-  }, [issues, filterProjects, filterPriorities, filterTags]);
+  }, [issues, searchQuery, filterProjects, filterPriorities, filterTags]);
 
   const toggleProject = (project: string) =>
     setFilterProjects((prev) =>
@@ -111,6 +110,8 @@ export default function App() {
   return (
     <div className="flex flex-col h-full bg-gray-950 text-white">
       <Header
+        currentPage={page}
+        onPageChange={setPage}
         onNewIssue={() => setShowCreateModal(true)}
         onUpgrade={() => setShowCheckout(true)}
         onAdminDashboard={() => setShowAdminDashboard(true)}
@@ -141,6 +142,8 @@ export default function App() {
               </button>
             </div>
           </div>
+        ) : page === 'dashboard' ? (
+          <DashboardPage issues={issues} />
         ) : (
           <>
             <FilterBar
@@ -149,10 +152,12 @@ export default function App() {
               selectedProjects={filterProjects}
               selectedPriorities={filterPriorities}
               selectedTags={filterTags}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
               onToggleProject={toggleProject}
               onTogglePriority={togglePriority}
               onToggleTag={toggleTag}
-              onClearAll={() => { setFilterProjects([]); setFilterPriorities([]); setFilterTags([]); }}
+              onClearAll={() => { setFilterProjects([]); setFilterPriorities([]); setFilterTags([]); setSearchQuery(''); }}
             />
             <div className="flex-1 overflow-hidden pt-4">
               <Board issues={filteredIssues} existingTags={allTags} onIssuesChange={setIssues} />

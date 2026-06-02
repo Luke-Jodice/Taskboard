@@ -1,22 +1,54 @@
-import { Plus, Kanban, Sparkles, Shield } from 'lucide-react';
+import { Plus, Kanban, Sparkles, Shield, LayoutDashboard } from 'lucide-react';
 import { SignInButton, SignUpButton, UserButton, useUser } from '@clerk/react';
 import { useAdminRole } from '../hooks/useAdminRole';
 
+type Page = 'board' | 'dashboard';
+
 interface HeaderProps {
+  currentPage: Page;
+  onPageChange: (page: Page) => void;
   onNewIssue: () => void;
   onUpgrade: () => void;
   onAdminDashboard: () => void;
 }
 
-export default function Header({ onNewIssue, onUpgrade, onAdminDashboard }: HeaderProps) {
+export default function Header({ currentPage, onPageChange, onNewIssue, onUpgrade, onAdminDashboard }: HeaderProps) {
   const { isSignedIn } = useUser();
   const isAdmin = useAdminRole();
 
   return (
     <header className="flex items-center justify-between px-6 py-3 bg-gray-900 border-b border-gray-800 flex-shrink-0">
-      <div className="flex items-center gap-2.5">
-        <Kanban size={22} className="text-blue-400" />
-        <span className="text-lg font-bold text-white tracking-tight">TaskBoard</span>
+      <div className="flex items-center gap-5">
+        <div className="flex items-center gap-2.5">
+          <Kanban size={22} className="text-blue-400" />
+          <span className="text-lg font-bold text-white tracking-tight">TaskBoard</span>
+        </div>
+        {isSignedIn && (
+          <nav className="flex items-center gap-0.5">
+            <button
+              onClick={() => onPageChange('board')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                currentPage === 'board'
+                  ? 'bg-gray-800 text-white'
+                  : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50'
+              }`}
+            >
+              <Kanban size={14} />
+              Board
+            </button>
+            <button
+              onClick={() => onPageChange('dashboard')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                currentPage === 'dashboard'
+                  ? 'bg-gray-800 text-white'
+                  : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50'
+              }`}
+            >
+              <LayoutDashboard size={14} />
+              Dashboard
+            </button>
+          </nav>
+        )}
       </div>
 
       <div className="flex items-center gap-2">

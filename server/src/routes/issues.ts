@@ -6,15 +6,22 @@ import { Status } from '../types';
 
 const router = Router();
 
+function resolveUserId(req: Request): string | null {
+  const localKey = process.env.LOCAL_API_KEY;
+  if (localKey && req.headers.authorization === `Bearer ${localKey}`) {
+    return process.env.LOCAL_USER_ID ?? null;
+  }
+  return getAuth(req).userId ?? null;
+}
+
 router.use((req, res, next) => {
-  const { userId } = getAuth(req);
-  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+  if (!resolveUserId(req)) return res.status(401).json({ error: 'Unauthorized' });
   next();
 });
 
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const { userId } = getAuth(req);
+    const userId = resolveUserId(req);
     const issues = await db.all(userId!);
     res.json(issues);
   } catch (err: any) {
@@ -24,7 +31,7 @@ router.get('/', async (req: Request, res: Response) => {
 
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { userId } = getAuth(req);
+    const userId = resolveUserId(req);
     const { title, description = '', status = 'todo', priority = 'medium', file_refs = [], tags = [] } = req.body;
 
     if (!title || typeof title !== 'string' || title.trim() === '') {
@@ -57,7 +64,7 @@ router.post('/', async (req: Request, res: Response) => {
 
 router.patch('/:id', async (req: Request, res: Response) => {
   try {
-    const { userId } = getAuth(req);
+    const userId = resolveUserId(req);
     const { id } = req.params;
     const existing = await db.get(id, userId!);
     if (!existing) {
@@ -83,7 +90,7 @@ router.patch('/:id', async (req: Request, res: Response) => {
 
 router.delete('/:id', async (req: Request, res: Response) => {
   try {
-    const { userId } = getAuth(req);
+    const userId = resolveUserId(req);
     const { id } = req.params;
     if (!(await db.get(id, userId!))) {
       res.status(404).json({ error: 'Issue not found' });
@@ -98,7 +105,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
 
 router.patch('/:id/move', async (req: Request, res: Response) => {
   try {
-    const { userId } = getAuth(req);
+    const userId = resolveUserId(req);
     const { id } = req.params;
     const { status, position } = req.body;
 
