@@ -6,6 +6,25 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
+let _getToken: (() => Promise<string | null>) | null = null;
+
+api.interceptors.request.use(async (config) => {
+  if (_getToken) {
+    const token = await _getToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    } else {
+      delete config.headers.Authorization;
+    }
+  }
+  return config;
+});
+
+export function initAuth(getToken: () => Promise<string | null>) {
+  _getToken = getToken;
+}
+
+/** @deprecated Use initAuth instead */
 export function setAuthToken(token: string | null) {
   if (token) {
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`;

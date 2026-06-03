@@ -8,7 +8,7 @@ import CheckoutModal from './components/CheckoutModal';
 import AdminDashboard from './components/AdminDashboard';
 import DashboardPage from './components/DashboardPage';
 import type { Issue, Priority, Status } from './types';
-import { getIssues, setAuthToken } from './api';
+import { getIssues, initAuth } from './api';
 import { getProject } from './utils';
 
 export default function App() {
@@ -78,6 +78,12 @@ export default function App() {
       prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
     );
 
+  useEffect(() => {
+    if (isLoaded && isSignedIn) {
+      initAuth(getToken);
+    }
+  }, [isLoaded, isSignedIn, getToken]);
+
   const fetchIssues = useCallback(async () => {
     if (!isLoaded) return;
     if (!isSignedIn) {
@@ -87,8 +93,6 @@ export default function App() {
     }
     try {
       setError(null);
-      const token = await getToken();
-      setAuthToken(token);
       const data = await getIssues();
       setIssues(data);
     } catch (err) {

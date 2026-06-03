@@ -426,93 +426,95 @@ export default function IssueModal({ issue, defaultStatus = 'todo', existingTags
             ))}
           </div>
 
-          {/* Tab content */}
-          <form id="issue-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
-            <AnimatePresence mode="wait" initial={false}>
-              {activeTab === 'details' ? (
-                <motion.div
-                  key="details"
-                  initial={{ opacity: 0, x: slideDir * -24 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: slideDir * 24 }}
-                  transition={{ duration: 0.18, ease: 'easeInOut' }}
-                  className="px-6 py-5 space-y-5"
-                >
-                  {error && (
-                    <div className="text-red-400 text-sm bg-red-950/50 border border-red-800/60 rounded-xl px-3 py-2">
-                      {error}
+          {/* Tab content + footer wrapped in one form so Save is always inside it */}
+          <form onSubmit={handleSubmit} className="flex-1 overflow-hidden flex flex-col min-h-0">
+            {/* Scrollable tab content */}
+            <div className="flex-1 overflow-y-auto min-h-0">
+              <AnimatePresence mode="wait" initial={false}>
+                {activeTab === 'details' ? (
+                  <motion.div
+                    key="details"
+                    initial={{ opacity: 0, x: slideDir * -24 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: slideDir * 24 }}
+                    transition={{ duration: 0.18, ease: 'easeInOut' }}
+                    className="px-6 py-5 space-y-5"
+                  >
+                    {error && (
+                      <div className="text-red-400 text-sm bg-red-950/50 border border-red-800/60 rounded-xl px-3 py-2">
+                        {error}
+                      </div>
+                    )}
+
+                    <textarea
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      placeholder="Add a description…"
+                      rows={3}
+                      className="w-full bg-gray-800/50 border border-gray-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-blue-500/70 focus:ring-1 focus:ring-blue-500/30 transition-colors resize-none"
+                    />
+
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Status</p>
+                      <SegmentedControl id="status" options={STATUS_OPTIONS} value={status} onChange={setStatus} />
                     </div>
-                  )}
 
-                  <textarea
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Add a description…"
-                    rows={3}
-                    className="w-full bg-gray-800/50 border border-gray-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-blue-500/70 focus:ring-1 focus:ring-blue-500/30 transition-colors resize-none"
-                  />
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Priority</p>
+                      <SegmentedControl id="priority" options={PRIORITY_OPTIONS} value={priority} onChange={setPriority} />
+                    </div>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="context"
+                    initial={{ opacity: 0, x: slideDir * -24 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: slideDir * 24 }}
+                    transition={{ duration: 0.18, ease: 'easeInOut' }}
+                    className="px-6 py-5 space-y-5"
+                  >
+                    <FileRefPicker value={fileRefs} onChange={setFileRefs} />
+                    <TagPicker value={tags} onChange={setTags} suggestions={existingTags} />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
 
-                  <div>
-                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Status</p>
-                    <SegmentedControl id="status" options={STATUS_OPTIONS} value={status} onChange={setStatus} />
+            {/* Footer */}
+            <div className="flex items-center justify-between px-6 py-4 border-t border-gray-800 shrink-0">
+              {isEditing && onDeleted ? (
+                confirmDelete ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-red-400">Delete this issue?</span>
+                    <button type="button" onClick={handleDelete} disabled={saving} className="text-sm bg-red-600 hover:bg-red-500 text-white px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50">
+                      Delete
+                    </button>
+                    <button type="button" onClick={() => setConfirmDelete(false)} className="text-sm text-gray-400 hover:text-white px-2 py-1.5 transition-colors">
+                      Cancel
+                    </button>
                   </div>
-
-                  <div>
-                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Priority</p>
-                    <SegmentedControl id="priority" options={PRIORITY_OPTIONS} value={priority} onChange={setPriority} />
-                  </div>
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="context"
-                  initial={{ opacity: 0, x: slideDir * -24 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: slideDir * 24 }}
-                  transition={{ duration: 0.18, ease: 'easeInOut' }}
-                  className="px-6 py-5 space-y-5"
-                >
-                  <FileRefPicker value={fileRefs} onChange={setFileRefs} />
-                  <TagPicker value={tags} onChange={setTags} suggestions={existingTags} />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </form>
-
-          {/* Footer */}
-          <div className="flex items-center justify-between px-6 py-4 border-t border-gray-800">
-            {isEditing && onDeleted ? (
-              confirmDelete ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-red-400">Delete this issue?</span>
-                  <button type="button" onClick={handleDelete} disabled={saving} className="text-sm bg-red-600 hover:bg-red-500 text-white px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50">
+                ) : (
+                  <button type="button" onClick={() => setConfirmDelete(true)} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-red-400 transition-colors">
+                    <Trash2 size={14} />
                     Delete
                   </button>
-                  <button type="button" onClick={() => setConfirmDelete(false)} className="text-sm text-gray-400 hover:text-white px-2 py-1.5 transition-colors">
-                    Cancel
-                  </button>
-                </div>
-              ) : (
-                <button type="button" onClick={() => setConfirmDelete(true)} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-red-400 transition-colors">
-                  <Trash2 size={14} />
-                  Delete
-                </button>
-              )
-            ) : <div />}
+                )
+              ) : <div />}
 
-            <div className="flex items-center gap-2">
-              <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-gray-800">
-                Cancel
-              </button>
-              <button
-                type="submit"
-                form="issue-form"
-                disabled={saving}
-                className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-medium transition-colors disabled:opacity-50"
-              >
-                {saving ? 'Saving…' : isEditing ? 'Save Changes' : 'Create Issue'}
-              </button>
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-gray-800">
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-medium transition-colors disabled:opacity-50"
+                >
+                  {saving ? 'Saving…' : isEditing ? 'Save Changes' : 'Create Issue'}
+                </button>
+              </div>
             </div>
-          </div>
+          </form>
         </motion.div>
       </motion.div>
     </AnimatePresence>
